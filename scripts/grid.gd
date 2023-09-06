@@ -37,17 +37,33 @@ var final_touch = Vector2.ZERO
 var is_controlling = false
 
 # scoring variables and signals
-
-
+var score = 0
+var streak = 0
+signal  score_updated(new_score)
+@export var goal = 100
+signal _goal(goal)
 # counter variables and signals
-
-
+@export var moves = 20
+@export var timeMode = false
+@export var timeLeft = 60
+signal moves_left(moves)
+signal time_left(time)
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	state = MOVE
 	randomize()
 	all_pieces = make_2d_array()
 	spawn_pieces()
+	if timeMode:
+		get_parent().get_node("gameTimer").start()
+		emit_signal("time_left",timeLeft)
+	elif timeMode==false:
+		emit_signal("moves_left",moves)
+	emit_signal("_goal",goal)
+	emit_signal("score_updated",score)
+
+	
+	
 
 func make_2d_array():
 	var array = []
@@ -121,6 +137,7 @@ func swap_pieces(column, row, direction: Vector2):
 		return
 	# swap
 	state = WAIT
+	#moves-=1#TODO
 	store_info(first_piece, other_piece, Vector2(column, row), direction)
 	all_pieces[column][row] = other_piece
 	all_pieces[column + direction.x][row + direction.y] = first_piece
@@ -180,6 +197,12 @@ func find_matches():
 					all_pieces[i][j].dim()
 					all_pieces[i + 1][j].matched = true
 					all_pieces[i + 1][j].dim()
+					
+					#streak increases
+					#if streak != 1:
+					#streak+=1
+					
+					
 				# detect vertical matches
 				if (
 					j > 0 and j < height -1 
@@ -195,6 +218,9 @@ func find_matches():
 					all_pieces[i][j + 1].matched = true
 					all_pieces[i][j + 1].dim()
 					
+					#if streak != 1:
+					#streak+=1
+					
 	get_parent().get_node("destroy_timer").start()
 	
 func destroy_matched():
@@ -205,7 +231,11 @@ func destroy_matched():
 				was_matched = true
 				all_pieces[i][j].queue_free()
 				all_pieces[i][j] = null
+				score+=10*streak 
+				#print("score: ", str(score)," * ",str(streak))
+				emit_signal("score_updated",score)
 				
+	#streak=1
 	move_checked = true
 	if was_matched:
 		get_parent().get_node("collapse_timer").start()
@@ -258,11 +288,23 @@ func check_after_refill():
 				get_parent().get_node("destroy_timer").start()
 				return
 	state = MOVE
+	streak=0
+	if timeMode==false:
+		moves-=1
+		emit_signal("moves_left",moves)
 	
 	move_checked = false
+	
+	if moves==0 || timeLeft==0:
+		game_over()
+	
+	if score>=goal:
+		you_win()
+
 
 func _on_destroy_timer_timeout():
 	print("destroy")
+	streak+=1
 	destroy_matched()
 
 func _on_collapse_timer_timeout():
@@ -270,8 +312,26 @@ func _on_collapse_timer_timeout():
 	collapse_columns()
 
 func _on_refill_timer_timeout():
+	
 	refill_columns()
 	
 func game_over():
 	state = WAIT
+	if timeLeft==0:
+		get_parent().get_node("gameTimer").stop()
 	print("game over")
+	
+
+func you_win():
+	state = WAIT
+	if timeMode:
+		get_parent().get_node("gameTimer").stop()
+	print("YOU WIN!")
+
+func _on_game_timer_timeout():
+	if timeMode:
+		timeLeft-=1
+		print("TimeLeft: ",str(timeLeft))
+		emit_signal("time_left",timeLeft)
+		if timeLeft==0:
+			game_over()

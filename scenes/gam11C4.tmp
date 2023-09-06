@@ -28,9 +28,6 @@ x_start = 64
 y_start = 800
 offset = 64
 y_offset = 2
-goal = 1000
-moves = 10
-timeLeft = 5
 
 [node name="destroy_timer" type="Timer" parent="."]
 wait_time = 0.5
@@ -44,14 +41,6 @@ one_shot = true
 wait_time = 0.5
 one_shot = true
 
-[node name="gameTimer" type="Timer" parent="."]
-autostart = true
-
-[connection signal="_goal" from="grid" to="top_ui" method="_on_grid__goal"]
-[connection signal="moves_left" from="grid" to="top_ui" method="_on_grid_moves_left"]
-[connection signal="score_updated" from="grid" to="top_ui" method="_on_grid_score_updated"]
-[connection signal="time_left" from="grid" to="top_ui" method="_on_game_time_left"]
 [connection signal="timeout" from="destroy_timer" to="grid" method="_on_destroy_timer_timeout"]
 [connection signal="timeout" from="collapse_timer" to="grid" method="_on_collapse_timer_timeout"]
 [connection signal="timeout" from="refill_timer" to="grid" method="_on_refill_timer_timeout"]
-[connection signal="timeout" from="gameTimer" to="grid" method="_on_game_timer_timeout"]
